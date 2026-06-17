@@ -17,6 +17,7 @@ class Article(db.Model):
     content = db.Column(db.String)
     preview = db.Column(db.String)
     minutes_to_read = db.Column(db.Integer)
+    is_member_only = db.Column(db.Boolean, default=False)
     date = db.Column(db.DateTime, server_default=db.func.now())
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -43,6 +44,7 @@ class ArticleSchema(Schema):
     content = fields.String()
     preview = fields.String()
     minutes_to_read = fields.Int()
+    is_member_only = fields.Boolean()
     date = fields.DateTime()
 
     user = fields.Nested(lambda: UserSchema(exclude=("articles",)))

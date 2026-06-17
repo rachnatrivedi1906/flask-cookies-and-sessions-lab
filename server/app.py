@@ -2,6 +2,7 @@
 
 from flask import Flask, make_response, jsonify, session
 from flask_migrate import Migrate
+from flask.views import MethodView
 
 from models import db, Article, User, ArticleSchema, UserSchema
 
@@ -27,7 +28,49 @@ def index_articles():
 
 @app.route('/articles/<int:id>')
 def show_article(id):
-    pass
+    if 'page_views' not in session:
+        session['page_views'] = 0
+
+    session['page_views'] += 1
+
+    if session['page_views'] > 3:
+        return {'message': 'Maximum pageview limit reached'}, 401
+
+    article = Article.query.get(id)
+
+    if article is None:
+        return {'message': 'Article not found'}, 404
+
+    return make_response(ArticleSchema().dump(article))
+
+
+class MemberOnlyIndex(MethodView):
+    def get(self):
+        if not session.get('user_id'):
+            return {'message': 'Unauthorized'}, 401
+
+        articles = Article.query.filter_by(is_member_only=True).all()
+        return make_response([ArticleSchema().dump(article) for article in articles])
+
+
+class MemberOnlyArticle(MethodView):
+    def get(self, id):
+        if not session.get('user_id'):
+            return {'message': 'Unauthorized'}, 401
+
+        article = Article.query.filter_by(id=id, is_member_only=True).first()
+
+        if article is None:
+            return {'message': 'Article not found'}, 404
+
+        return make_response(ArticleSchema().dump(article))
+
+
+member_only_index = MemberOnlyIndex.as_view('member_only_index')
+app.add_url_rule('/member_only_articles', view_func=member_only_index, methods=['GET'])
+
+member_only_article = MemberOnlyArticle.as_view('member_only_article')
+app.add_url_rule('/member_only_articles/<int:id>', view_func=member_only_article, methods=['GET'])
 
 
 if __name__ == '__main__':

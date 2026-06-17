@@ -33,6 +33,7 @@ with app.app_context():
             content=content,
             preview=preview,
             minutes_to_read=randint(1,20),
+            is_member_only=(i % 10 == 0),
         )
 
         article.user = users[i // 4]
